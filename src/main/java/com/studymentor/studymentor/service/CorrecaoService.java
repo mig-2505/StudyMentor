@@ -3,6 +3,7 @@ package com.studymentor.studymentor.service;
 import com.studymentor.studymentor.dto.CorrecaoRequest;
 import com.studymentor.studymentor.dto.CorrecaoResponse;
 import com.studymentor.studymentor.dto.RespostaAlunoDTO;
+import com.studymentor.studymentor.exception.QuizNaoEncontradoException;
 import com.studymentor.studymentor.model.QuestaoGeradaIA;
 import com.studymentor.studymentor.model.QuizArmazenado;
 import com.studymentor.studymentor.repository.QuizMemoryRepository;
@@ -39,13 +40,13 @@ public class CorrecaoService {
 
         // 2. Buscar o quiz armazenado
         QuizArmazenado quiz = repository.buscarPorId(quizId)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Quiz nao encontrado."
+                .orElseThrow(() -> new QuizNaoEncontradoException(
+                        "Quiz nao encontrado: " + quizId
                 ));
 
         List<QuestaoGeradaIA> questoes = quiz.questoes();
 
-        // 3. Validar a lista de respostas
+        // 3. Validar a quantidade de respostas
         List<RespostaAlunoDTO> respostas = request.respostas();
 
         if (respostas == null
@@ -56,7 +57,7 @@ public class CorrecaoService {
             );
         }
 
-        // 4. Organizar as respostas pelo ID da questao
+        // 4. Organizar as respostas por ID
         Map<Integer, String> respostasPorQuestao =
                 new HashMap<>();
 
@@ -126,19 +127,18 @@ public class CorrecaoService {
                 acertos++;
             }
 
-            CorrecaoResponse.ResultadoQuestaoDTO resultado =
+            resultados.add(
                     new CorrecaoResponse.ResultadoQuestaoDTO(
                             questaoId,
                             respostaAluno,
                             respostaCorreta,
                             acertou,
                             questao.explicacao()
-                    );
-
-            resultados.add(resultado);
+                    )
+            );
         }
 
-        // 6. Calcular a nota
+        // 6. Calcular a pontuacao
         int totalQuestoes = questoes.size();
         int erros = totalQuestoes - acertos;
 
@@ -148,7 +148,7 @@ public class CorrecaoService {
         percentualAcertos =
                 Math.round(percentualAcertos * 100.0) / 100.0;
 
-        // 7. Devolver o resultado
+        // 7. Retornar a correcao
         return new CorrecaoResponse(
                 quizId,
                 totalQuestoes,
@@ -159,4 +159,5 @@ public class CorrecaoService {
         );
     }
 }
+
 
